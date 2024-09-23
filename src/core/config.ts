@@ -61,6 +61,7 @@ export const config = mergeDeep(DEFAULT_CONFIG, {
     error_log_file_path: choice(command.getOptionValue("error_log"), parsedConfig?.error_log_file_path, DEFAULT_CONFIG.error_log_file_path),
     debug_log_file_path: choice(command.getOptionValue("debug_log"), parsedConfig?.debug_log_file_path, DEFAULT_CONFIG.debug_log_file_path),
     watch: choice(command.getOptionValue("watch"), parsedConfig?.watch, DEFAULT_CONFIG.watch),
+    api_dir: choice(null, parsedConfig?.api_dir, DEFAULT_CONFIG.api_dir),
     static_dir: choice(command.getOptionValue("static-dir"), parsedConfig?.static_dir, DEFAULT_CONFIG.static_dir),
     static_route_prefix: choice(command.getOptionValue("static-route-prefix"), parsedConfig?.static_route_prefix, DEFAULT_CONFIG.static_route_prefix),
     plugins: parsedConfig?.plugins ?? {},
