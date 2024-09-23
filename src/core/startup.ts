@@ -66,9 +66,16 @@ export async function startup(config, cwd) {
         const group = path.normalize(path.parse(path.normalize(file)).dir).replaceAll(path.sep, '/');
         const regBackets = /\[([^}]*)\]/g;
 
+        const regCurly = /\.\{([^}]*)\}/g;
+        let [basename, query] = [path.basename(file), ''];
+        if (regCurly.test(basename))
+        {
+            basename = basename.replace(regCurly, (_, q) => {query = q; return ''});
+        }
+
         const transformFile = (value: string) =>
             regBackets.test(value) ? value.replace(regBackets, (_, s) => `:${s}`) : value;
-        const transformedFile = transformFile(path.basename(file));
+        const transformedFile = transformFile(basename);
         const withMethodParams = /(.*)\.(get|post|patch|head|delete|option|put)\.(.*)$/.exec(transformedFile);
 
         if (withMethodParams) {
@@ -81,7 +88,9 @@ export async function startup(config, cwd) {
         app.group(group.replaceAll(".", ""), (app) => {
             const finalUrl = urlRewrite(url, method,);
             app[method]?.(finalUrl, async (req) => {
-                let res = Bun.file(resolve(path.join(config.api_dir, file)));
+                const filePath = query && req.query && req.query[query]
+                    ? file.replace(regCurly, path.sep + req.query[query]) : file;
+                let res = Bun.file(resolve(path.join(config.api_dir, filePath)));
                 logger.debug(JSON.stringify(pick(req, ['cookie', 'user-agent', 'headers', "params", 'body', 'route', 'query', 'content-type'])));
                 switch (path.extname(file)) {
                     case ".json":
