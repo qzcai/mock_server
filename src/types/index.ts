@@ -1,6 +1,7 @@
 export interface IConfigParameter {
     log_size: "10B" | "10K" | "10M" | "10G";
     port: string;
+    interactive: boolean;
     silent: boolean;
     error_log_file_path: string;
     debug_log_file_path: string;

@@ -26,6 +26,7 @@ export function checkAndInit({resolve, config}) {
 program.option('-d, --debug', 'output extra debugging')
     .option('-cw, --cwd <cwd>', 'cwd')
     .option('-p , --port <port>', 'server port')
+    .option('-i , --interactive <interactive>', 'interactive')
     .option('-s , --silent <silent>', 'silent output')
     .option('-w , --watch <watch>', 'silent output')
     .option('-f , --static-dir <static-dir>', 'static dir')
@@ -58,6 +59,7 @@ const choice = (cmd: any, parsed: any, defaultConfig: any) => {
 export const config = mergeDeep(DEFAULT_CONFIG, {
     port: choice(command.getOptionValue('port'), parsedConfig?.port, DEFAULT_CONFIG.port),
     silent: choice(command.getOptionValue("silent"), parsedConfig?.silent, DEFAULT_CONFIG.silent),
+    interactive: choice(command.getOptionValue("interactive"), parsedConfig?.interactive, DEFAULT_CONFIG.interactive),
     error_log_file_path: choice(command.getOptionValue("error_log"), parsedConfig?.error_log_file_path, DEFAULT_CONFIG.error_log_file_path),
     debug_log_file_path: choice(command.getOptionValue("debug_log"), parsedConfig?.debug_log_file_path, DEFAULT_CONFIG.debug_log_file_path),
     watch: choice(command.getOptionValue("watch"), parsedConfig?.watch, DEFAULT_CONFIG.watch),

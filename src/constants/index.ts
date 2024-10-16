@@ -10,6 +10,7 @@ export const DEFAULT_CONFIG: IConfigParameter = {
     static_route_prefix: 'static',
     port: "3000",
     silent: false,
+    interactive: true,
     error_log_file_path: "./error.log",
     log_size: "10M",
     debug_log_file_path: "./debug.log",
@@ -25,6 +26,7 @@ static_dir: static
 static_route_prefix: /
 port: 3000
 silent:
+interactive:
 error_log_file_path: ./error.log
 log_size: 10M
 debug_log_file_path: ./debug.log

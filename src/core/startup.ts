@@ -186,22 +186,27 @@ export async function startup(config, cwd) {
         }
     }
 
-// 拦截
-    readline.emitKeypressEvents(process.stdin);
-    process.stdin.setRawMode(true);
-// 监听事件
-    process.stdin.on('keypress', (str) => {
-        str = str?.toLowerCase?.();
-        switch (str) {
-            //按r重启
-            case 'r':
-                restart();
-                break;
-            //按d退出
-            case 'q':
-                process.exit(0);
-                break;
-        }
-    });
-
+    if (config.interactive) {
+        // 拦截
+            readline.emitKeypressEvents(process.stdin);
+            process.stdin.setRawMode(true);
+        // 监听事件
+            process.stdin.on('keypress', (str) => {
+                str = str?.toLowerCase?.();
+                switch (str) {
+                    //按r重启
+                    case 'r':
+                        restart();
+                        break;
+                    //按d退出
+                    case 'q':
+                        process.exit(0);
+                        break;
+                }
+            });
+    }
+    else
+    {
+        logger.info('Interactive input is disabled in this environment.');
+    }
 }
