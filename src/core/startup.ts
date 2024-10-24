@@ -89,7 +89,10 @@ export async function startup(config, cwd) {
             const finalUrl = urlRewrite(url, method,);
             app[method]?.(finalUrl, async (req) => {
                 const filePath = query && req.query && req.query[query]
-                    ? file.replace(regCurly, path.sep + req.query[query]) : file;
+                    ? file.replace(regCurly, path.sep + req.query[query])
+                    : req.body && req.body["method_name"] ?
+                        file.replace(".post", path.sep + req.body["method_name"]) : file;
+
                 let res = Bun.file(resolve(path.join(config.api_dir, filePath)));
                 logger.debug(JSON.stringify(pick(req, ['cookie', 'user-agent', 'headers', "params", 'body', 'route', 'query', 'content-type'])));
                 switch (path.extname(file)) {
