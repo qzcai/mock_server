@@ -88,14 +88,33 @@ export async function startup(config, cwd) {
         app.group(group.replaceAll(".", ""), (app) => {
             const finalUrl = urlRewrite(url, method,);
             app[method]?.(finalUrl, async (req) => {
-                const filePath = query && req.query && req.query[query]
-                    ? file.replace(regCurly, path.sep + req.query[query])
-                    : req.body && req.body["method_name"] ?
-                        file.replace(".post", path.sep + req.body["method_name"]) : file;
+                const isQuery = method == "get" || method == "head" || method == "option";
+                let runtimeVariable = ""
+                if (isQuery) {
+                    if (query && req.query && req.query[query]) {
+                        runtimeVariable = req.query[query];
+                    }
+                } else {
+                    if (query && req.body && req.body[query]) {
+                        runtimeVariable = req.body[query];
+                    }
+                }
+
+                let filePath = file;
+                if (runtimeVariable) {
+                    const methodAndQuery = /(\.(get|post|patch|head|delete|option|put))?\.\{([^}]*)\}.json$/;
+                    let folderPath = file.replace(methodAndQuery, '');
+                    const files = fs.readdirSync(path.join(config.api_dir, folderPath));
+                    for (const file of files) {
+                        if (path.basename(file).startsWith(runtimeVariable)) {
+                            filePath = path.join(folderPath, path.basename(file));
+                        }
+                    }
+                }
 
                 let res = Bun.file(resolve(path.join(config.api_dir, filePath)));
                 logger.debug(JSON.stringify(pick(req, ['cookie', 'user-agent', 'headers', "params", 'body', 'route', 'query', 'content-type'])));
-                switch (path.extname(file)) {
+                switch (path.extname(filePath)) {
                     case ".json":
                         return safeRun(async () => Mock.mock(
                             JSON.parse(
