@@ -51,6 +51,43 @@ export async function startup(config, cwd) {
         return files.some(f => f.endsWith('.json') && path.basename(f).startsWith(parentDirName));
     };
 
+    const getQuery = (input: string) => {
+        const regCurly = /\.\{([^}]*)\}/g;
+        const match = regCurly.exec(input);
+        return match ? match[1] : null;
+    }
+
+    const getFilePath = (filePath: string, method: string, query: string, req: any) => {
+        const isQuery = method == "get" || method == "head" || method == "option";
+        let runtimeVariable = ""
+        if (isQuery) {
+            if (query && req.query && req.query[query]) {
+                runtimeVariable = req.query[query];
+            }
+        } else {
+            if (query && req.body && req.body[query]) {
+                runtimeVariable = req.body[query];
+            }
+        }
+
+        if (runtimeVariable) {
+            const methodAndQuery = /(\.(get|post|patch|head|delete|option|put))?\.\{([^}]*)\}.json$/;
+            let folderPath = filePath.replace(methodAndQuery, '');
+            const files = fs.readdirSync(folderPath);
+            for (const file of files) {
+                if (!file.startsWith(runtimeVariable)) continue;
+
+                let filePath = path.join(folderPath, file);
+                if (!fs.statSync(filePath).isFile()) continue;
+
+                let query = getQuery(filePath);
+                return query ? getFilePath(filePath, method, query, req) : filePath;
+            }
+        }
+
+        return filePath;
+    };
+
     // 记录路由表
     const routeTable = new Table({
         columns: [
@@ -100,32 +137,10 @@ export async function startup(config, cwd) {
         app.group(group.replaceAll(".", ""), (app) => {
             const finalUrl = urlRewrite(url, method,);
             app[method]?.(finalUrl, async (req) => {
-                const isQuery = method == "get" || method == "head" || method == "option";
-                let runtimeVariable = ""
-                if (isQuery) {
-                    if (query && req.query && req.query[query]) {
-                        runtimeVariable = req.query[query];
-                    }
-                } else {
-                    if (query && req.body && req.body[query]) {
-                        runtimeVariable = req.body[query];
-                    }
-                }
-
-                let filePath = file;
-                if (runtimeVariable) {
-                    const methodAndQuery = /(\.(get|post|patch|head|delete|option|put))?\.\{([^}]*)\}.json$/;
-                    let folderPath = file.replace(methodAndQuery, '');
-                    const files = fs.readdirSync(resolve(path.join(config.api_dir, folderPath)));
-                    for (const file of files) {
-                        if (path.basename(file).startsWith(runtimeVariable)) {
-                            filePath = path.join(folderPath, path.basename(file));
-                        }
-                    }
-                }
-
-                let res = Bun.file(resolve(path.join(config.api_dir, filePath)));
+                let filePath = getFilePath(resolve(path.join(config.api_dir, file)), method, query, req);
+                let res = Bun.file(filePath);
                 logger.debug(JSON.stringify(pick(req, ['cookie', 'user-agent', 'headers', "params", 'body', 'route', 'query', 'content-type'])));
+                logger.debug(filePath);
                 switch (path.extname(filePath)) {
                     case ".json":
                         return safeRun(async () => Mock.mock(
