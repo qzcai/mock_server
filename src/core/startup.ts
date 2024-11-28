@@ -42,6 +42,15 @@ export async function startup(config, cwd) {
         }
         return url;
     };
+
+    const ignoreSubPath = (file: string) => {
+        const parentDir = path.dirname(file);
+        const parentDirName = path.basename(parentDir);
+
+        const files = fs.readdirSync(resolve(path.join(config.api_dir, parentDir, "..")));
+        return files.some(f => f.endsWith('.json') && path.basename(f).startsWith(parentDirName));
+    };
+
     // 记录路由表
     const routeTable = new Table({
         columns: [
@@ -62,6 +71,9 @@ export async function startup(config, cwd) {
     });
     let apiLength = 0;
     for await (const file of glob.scan(resolve(config.api_dir))) {
+        if (ignoreSubPath(file))
+            continue;
+
         let [_, url, method] = [undefined, '', 'get'];
         const group = path.normalize(path.parse(path.normalize(file)).dir).replaceAll(path.sep, '/');
         const regBackets = /\[([^}]*)\]/g;
@@ -104,7 +116,7 @@ export async function startup(config, cwd) {
                 if (runtimeVariable) {
                     const methodAndQuery = /(\.(get|post|patch|head|delete|option|put))?\.\{([^}]*)\}.json$/;
                     let folderPath = file.replace(methodAndQuery, '');
-                    const files = fs.readdirSync(path.join(config.api_dir, folderPath));
+                    const files = fs.readdirSync(resolve(path.join(config.api_dir, folderPath)));
                     for (const file of files) {
                         if (path.basename(file).startsWith(runtimeVariable)) {
                             filePath = path.join(folderPath, path.basename(file));
