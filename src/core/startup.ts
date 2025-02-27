@@ -57,27 +57,43 @@ export async function startup(config, cwd) {
         return match ? match[1] : null;
     }
 
+    const getAllFiles = (folderPath: string): string[] => {
+        const entries = fs.readdirSync(folderPath, { withFileTypes: true });
+        let files: string[] = [];
+
+        for (const entry of entries) {
+            const fullPath = path.join(folderPath, entry.name);
+            if (entry.isDirectory()) {
+                files = files.concat(getAllFiles(fullPath));
+            } else {
+                files.push(fullPath);
+            }
+        }
+        return files;
+    }
+
     const getFilePath = (filePath: string, method: string, query: string, req: any) => {
         const isQuery = method == "get" || method == "head" || method == "option";
         let runtimeVariable = ""
         if (isQuery) {
-            if (query && req.query && req.query[query]) {
-                runtimeVariable = req.query[query];
+            if (query && req.query) {
+                runtimeVariable = req.query[query]?.toString() ?? "";
             }
         } else {
-            if (query && req.body && req.body[query]) {
-                runtimeVariable = req.body[query];
+            if (query && req.body) {
+                runtimeVariable = req.body[query]?.toString() ?? "";
             }
         }
 
         if (runtimeVariable) {
             const methodAndQuery = /(\.(get|post|patch|head|delete|option|put))?\.\{([^}]*)\}.json$/;
             let folderPath = filePath.replace(methodAndQuery, '');
-            const files = fs.readdirSync(folderPath);
-            for (const file of files) {
-                if (!file.startsWith(runtimeVariable)) continue;
+            const files = getAllFiles(folderPath);
+            for (const filePath of files) {
+                const relativePath = path.relative(folderPath, filePath);
+                runtimeVariable = runtimeVariable.replace(/^\\+|\\+$/g, '').replace(/\\/g, path.sep)
+                if (!relativePath.startsWith(runtimeVariable)) continue;
 
-                let filePath = path.join(folderPath, file);
                 if (!fs.statSync(filePath).isFile()) continue;
 
                 let query = getQuery(filePath);
